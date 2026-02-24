@@ -87,7 +87,7 @@ app.post('/subscribe', async (_req, res) => {
     eventTypes: [131622],                                     // ANPR
     eventDest: `${process.env.LOCAL_IP}/anpr-event`
   };
-  const path = '/api/eventService/v1/eventSubscriptionByEventTypes';
+  const path = '/artemis/api/eventService/v1/eventSubscriptionByEventTypes';
 
   try {
     await axios.post(`https://${process.env.HIK_HOST}${path}`,
@@ -158,7 +158,7 @@ app.get('/run-sync', async (_req, res) => {
     }
   };
 
-  const path = '/api/vehicle/v1/parkinglot/passageway/record';
+  const path = '/artemis/api/vehicle/v1/parkinglot/passageway/record';
   try {
     const r = await axios.post(`https://${process.env.HIK_HOST}${path}`,
       body, signPost(path, body));
@@ -214,7 +214,7 @@ app.post('/confirm-from-db', async (req, res) => {
     ...(plateCategory != null ? { plateCategory } : {}),
   };
 
-  const path = '/api/vehicle/v1/parkingfee/confirm';
+  const path = '/artemis/api/vehicle/v1/parkingfee/confirm';
 
   try {
     const response = await axios.post(
