@@ -104,9 +104,9 @@ app.post('/subscribe', async (_req, res) => {
 app.post('/anpr-event', async (req, res) => {
   res.send('OK');
 
-  // console.log('\n===== HIKVISION RAW EVENT =====');
-  // console.log(JSON.stringify(req.body, null, 2));
-  // console.log('===============================\n');
+  console.log('\n===== HIKVISION RAW EVENT =====');
+  console.log(JSON.stringify(req.body, null, 2));
+  console.log('===============================\n');
   const evs = req.body?.params?.events || [];
   if (!evs.length) return;
   console.log(evs)
@@ -163,7 +163,6 @@ app.get('/run-sync', async (_req, res) => {
     const r = await axios.post(`https://${process.env.HIK_HOST}${path}`,
       body, signPost(path, body));
 
-    console.log("this dat from hikvisionm", list)
     const list = r.data?.data?.list || [];
     if (!list.length) return res.send('No vehicle records received.');
 
