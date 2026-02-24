@@ -102,7 +102,11 @@ app.post('/subscribe', async (_req, res) => {
  * 2)  HikCentral pushes every plate read here
  *********************************************************************/
 app.post('/anpr-event', async (req, res) => {
-  res.send('OK');                                 // ACK quickly
+  res.send('OK');
+
+  console.log('\n===== HIKVISION RAW EVENT =====');
+  console.log(JSON.stringify(req.body, null, 2));
+  console.log('===============================\n');
   const evs = req.body?.params?.events || [];
   if (!evs.length) return;
   console.log(evs)
