@@ -1,10 +1,10 @@
 require('dotenv/config');
 const express = require('express');
-const crypto  = require('crypto');
-const axios   = require('axios');
-const https   = require('https');
+const crypto = require('crypto');
+const axios = require('axios');
+const https = require('https');
 
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '2mb' }));      // parse HikCentral JSON
 
@@ -14,7 +14,7 @@ app.use(express.json({ limit: '2mb' }));      // parse HikCentral JSON
 function gstTimestamp(dateObj) {
   const gst = new Date(dateObj.getTime() + 4 * 3600 * 1000);
   return gst.toISOString()         // 2025-07-07T15:36:54.123Z
-            .replace(/\.\d{3}Z$/, '+04:00'); // 2025-07-07T15:36:54+04:00
+    .replace(/\.\d{3}Z$/, '+04:00'); // 2025-07-07T15:36:54+04:00
 }
 
 /*--------------------------------------------------*
@@ -22,24 +22,24 @@ function gstTimestamp(dateObj) {
  *--------------------------------------------------*/
 function signPost(path, jsonBody) {
   const md5 = crypto.createHash('md5').update(JSON.stringify(jsonBody)).digest('base64');
-  const ts  = Date.now().toString();
-  const s   = [
-    'POST','*/*',md5,'application/json',
+  const ts = Date.now().toString();
+  const s = [
+    'POST', '*/*', md5, 'application/json',
     `x-ca-key:${process.env.APPKEY}`,
     `x-ca-timestamp:${ts}`,
     path
   ].join('\n');
   const sig = crypto.createHmac('sha256', process.env.APPSECRET)
-                    .update(s, 'utf8').digest('base64');
+    .update(s, 'utf8').digest('base64');
 
   return {
-    headers : {
-      Accept:'*/*','Content-Type':'application/json','Content-MD5':md5,
-      'X-Ca-Key':process.env.APPKEY,'X-Ca-Timestamp':ts,
-      'X-Ca-Signature-Headers':'x-ca-key,x-ca-timestamp',
-      'X-Ca-Signature':sig
+    headers: {
+      Accept: '*/*', 'Content-Type': 'application/json', 'Content-MD5': md5,
+      'X-Ca-Key': process.env.APPKEY, 'X-Ca-Timestamp': ts,
+      'X-Ca-Signature-Headers': 'x-ca-key,x-ca-timestamp',
+      'X-Ca-Signature': sig
     },
-    httpsAgent : new https.Agent({ rejectUnauthorized:false })
+    httpsAgent: new https.Agent({ rejectUnauthorized: false })
   };
 }
 /*
@@ -84,14 +84,14 @@ app.post('/confirm-from-db', async (req, res) => {
  *********************************************************************/
 app.post('/subscribe', async (_req, res) => {
   const body = {
-    eventTypes : [131622],                                     // ANPR
-    eventDest  : `${process.env.LOCAL_IP}/anpr-event`
+    eventTypes: [131622],                                     // ANPR
+    eventDest: `${process.env.LOCAL_IP}/anpr-event`
   };
   const path = '/artemis/api/eventService/v1/eventSubscriptionByEventTypes';
 
   try {
     await axios.post(`https://${process.env.HIK_HOST}${path}`,
-                     body, signPost(path, body));
+      body, signPost(path, body));
     res.send('Subscription OK – HikCentral will now push ANPR events.');
   } catch (e) {
     res.status(500).send(e.response?.data || e.message);
@@ -105,7 +105,7 @@ app.post('/anpr-event', async (req, res) => {
   res.send('OK');                                 // ACK quickly
   const evs = req.body?.params?.events || [];
   if (!evs.length) return;
-console.log(evs)
+  console.log(evs)
 
   /*const list = evs.map(ev => ({
     guid              : ev.eventId,
@@ -132,6 +132,9 @@ console.log(evs)
       plate_number: ev.data?.plateNo ?? '',
       car_type: ev.data?.vehicleType ?? null,
       image_url: ev.data?.vehiclePicUri ?? '',
+      country: ev.data?.country ?? null,
+      plate_area_name: ev.data?.plateAreaName ?? null,
+      plate_category: ev.data?.plateCategory ?? null,
       enter_time: isExit ? null : ev.happenTime,
       exit_time: isExit ? ev.happenTime : null,
       allow_type: null,
@@ -141,8 +144,8 @@ console.log(evs)
 
   try {
     await axios.post(process.env.APEX_URL,
-                     { data: list },
-                     { headers:{'Content-Type':'application/json'} });
+      { data: list },
+      { headers: { 'Content-Type': 'application/json' } });
     console.log(`✔ wrote ${list.length} rows to Oracle`);
   } catch (e) {
     console.error('APEX insert failed:', e.response?.data || e.message);
@@ -154,54 +157,59 @@ console.log(evs)
  *********************************************************************/
 app.get('/run-sync', async (_req, res) => {
   const nowUtc = new Date();
-  const start  = new Date(nowUtc); start.setUTCHours(0,0,0,0);
+  const start = new Date(nowUtc); start.setUTCHours(0, 0, 0, 0);
 
   const body = {
-    pageIndex:1, pageSize:10,
-    queryInfo:{
-      parkingLotIndexCode:'1',
+    pageIndex: 1, pageSize: 10,
+    queryInfo: {
+      parkingLotIndexCode: '1',
       beginTime: gstTimestamp(start),
-      endTime  : gstTimestamp(nowUtc)
+      endTime: gstTimestamp(nowUtc)
     }
   };
 
   const path = '/artemis/api/vehicle/v1/parkinglot/passageway/record';
   try {
-    const r  = await axios.post(`https://${process.env.HIK_HOST}${path}`,
-                                body, signPost(path, body));
+    const r = await axios.post(`https://${process.env.HIK_HOST}${path}`,
+      body, signPost(path, body));
     const list = r.data?.data?.list || [];
     if (!list.length) return res.send('No vehicle records received.');
 
     await axios.post(process.env.APEX_URL,
-                     { data:list.map(v => ({
-                       guid:v.guid,
-                       parking_lot_code:v.parkingLotInfo.parkingLotIndexCode,
-                       parking_lot_name:v.parkingLotInfo.parkingLotName,
-                       passageway_code:v.passagewayInfo.passagewayIndexCode,
-                       passageway_name:v.passagewayInfo.passagewayName,
-                       lane_code:v.laneInfo.laneIndexCode,
-                       lane_name:v.laneInfo.laneName,
-                       lane_direction:v.laneInfo.direction,
-                       plate_number:v.carInfo.plateLicense,
-                       car_type:v.carInfo.carType,
-                       image_url:v.carInfo.ImageUrl,
-                       enter_time:v.carInfo.EnterTime,
-                       exit_time:v.carInfo.ExitTime,
-                       allow_type:v.allowType,
-                       allow_result:v.allowResult
-                     }))},
-                     { headers:{'Content-Type':'application/json'} });
+      {
+        data: list.map(v => ({
+          guid: v.guid,
+          parking_lot_code: v.parkingLotInfo.parkingLotIndexCode,
+          parking_lot_name: v.parkingLotInfo.parkingLotName,
+          passageway_code: v.passagewayInfo.passagewayIndexCode,
+          passageway_name: v.passagewayInfo.passagewayName,
+          lane_code: v.laneInfo.laneIndexCode,
+          lane_name: v.laneInfo.laneName,
+          lane_direction: v.laneInfo.direction,
+          plate_number: v.carInfo.plateLicense,
+          car_type: v.carInfo.carType,
+          image_url: v.carInfo.ImageUrl,
+          country: v.carInfo.country ?? null, 
+          plate_area_name: v.carInfo.plateAreaName ?? null,
+          plate_category: v.carInfo.plateCategory ?? null,
+          enter_time: v.carInfo.EnterTime,
+          exit_time: v.carInfo.ExitTime,
+          allow_type: v.allowType,
+          allow_result: v.allowResult
+        }))
+      },
+      { headers: { 'Content-Type': 'application/json' } });
     res.send(`Forwarded ${list.length} records to APEX`);
-  } catch(e){
-    console.error(e.response?.data||e.message);
-    res.status(500).send(e.response?.data||e.message);
+  } catch (e) {
+    console.error(e.response?.data || e.message);
+    res.status(500).send(e.response?.data || e.message);
   }
 });
 
 /* route for allowing to car to exits */
 
 app.post('/confirm-from-db', async (req, res) => {
-  const { plateLicense, immediatelyLeave, fee } = req.body;
+  const { plateLicense, immediatelyLeave, fee, country, plateCategory } = req.body;
 
   if (!plateLicense || immediatelyLeave === undefined || fee === undefined) {
     return res.status(400).send({ error: 'Missing plateLicense, immediatelyLeave, or fee' });
@@ -210,7 +218,9 @@ app.post('/confirm-from-db', async (req, res) => {
   const confirmBody = {
     plateLicense,
     immediatelyLeave,
-    fee
+    fee,
+    ...(country != null ? { country } : {}),
+    ...(plateCategory != null ? { plateCategory } : {}),
   };
 
   const path = '/artemis/api/vehicle/v1/parkingfee/confirm';
