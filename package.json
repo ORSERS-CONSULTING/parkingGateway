@@ -15,6 +15,9 @@
     "crypto": "^1.0.1",
     "dotenv": "^17.0.1",
     "express": "^5.1.0",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "oci-common": "^2.118.1",
+    "oci-sdk": "^2.118.1",
+    "oci-secrets": "^2.118.1"
   }
 }

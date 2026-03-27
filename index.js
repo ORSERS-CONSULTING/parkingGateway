@@ -1,4 +1,18 @@
 require('dotenv/config');
+
+const loadConfig = require('./config/env');
+
+(async () => {
+  const config = await loadConfig();
+  process.env.PORT = config.PORT
+  process.env.HIK_HOST = config.HIK_HOST;
+  process.env.LOCAL_IP = config.LOCAL_IP;
+  process.env.APEX_URL = config.APEX_URL;
+  process.env.APPKEY = config.APPKEY;
+  process.env.APPSECRET = config.APPSECRET;
+})();
+
+
 const express = require('express');
 const crypto = require('crypto');
 const axios = require('axios');
@@ -102,24 +116,14 @@ app.post('/subscribe', async (_req, res) => {
  * 2)  HikCentral pushes every plate read here
  *********************************************************************/
 app.post('/anpr-event', async (req, res) => {
-  res.send('OK');                                 // ACK quickly
+  res.send('OK');
+
+  console.log('\n===== HIKVISION RAW EVENT =====');
+  console.log(JSON.stringify(req.body, null, 2));
+  console.log('===============================\n');
   const evs = req.body?.params?.events || [];
   if (!evs.length) return;
   console.log(evs)
-
-  /*const list = evs.map(ev => ({
-    guid              : ev.eventId,
-    parking_lot_code  : ev.srcIndex,
-    parking_lot_name  : ev.srcName,
-    lane_direction    : ev.data?.vehicleDirectionType ?? null,
-    plate_number      : ev.data?.plateNo ?? '',
-    car_type          : ev.data?.vehicleType ?? null,
-    image_url         : ev.data?.vehiclePicUri ?? '',
-    enter_time        : ev.happenTime,
-    exit_time         : null,
-    allow_type        : null,
-    allow_result      : null
-  }));*/
 
   const list = evs.map(ev => {
     const passageName = ev.srcName?.toUpperCase() || '';
@@ -172,6 +176,7 @@ app.get('/run-sync', async (_req, res) => {
   try {
     const r = await axios.post(`https://${process.env.HIK_HOST}${path}`,
       body, signPost(path, body));
+
     const list = r.data?.data?.list || [];
     if (!list.length) return res.send('No vehicle records received.');
 
