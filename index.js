@@ -56,42 +56,7 @@ function signPost(path, jsonBody) {
     httpsAgent: new https.Agent({ rejectUnauthorized: false })
   };
 }
-/*
-app.post('/confirm-from-db', async (req, res) => {
-  const { plateLicense, fee } = req.body;
 
-  if (!plateLicense || fee === undefined) {
-    return res.status(400).send('Missing plateLicense or fee');
-  }
-
-  const body = {
-    plateLicense: plateLicense,
-    immediatelyLeave: 1,
-    fee: fee.toString()
-  };
-
-  const path = '/artemis/api/vehicle/v1/parkingfee/confirm';
-
-  try {
-    const response = await axios.post(
-      `https://${process.env.HIK_HOST}${path}`,
-      body,
-      signPost(path, body)
-    );
-
-    console.log('✔ Confirmed exit for plate:', plateLicense);
-    res.status(200).json({
-      message: 'Confirmation sent successfully',
-      hikResponse: response.data
-    });
-  } catch (error) {
-    console.error('❌ Failed to confirm exit:', error.response?.data || error.message);
-    res.status(500).json({
-      message: 'Failed to confirm exit',
-      error: error.response?.data || error.message
-    });
-  }
-});*/
 
 /**********************************************************************
  * 1)  One-time (or on reboot) subscription
