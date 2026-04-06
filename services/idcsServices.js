@@ -13,6 +13,7 @@ async function getIdcsToken() {
 
     
         console.log("apex2", process.env.APEX_URL);
+        console.log("idcs", process.env.IDCS_TENANT, process.env.IDCS_CLIENT_ID )
 
     const url = `https://${process.env.IDCS_TENANT}/oauth2/v1/token`;
     const body = new URLSearchParams({
@@ -26,6 +27,8 @@ async function getIdcsToken() {
             Authorization: `Basic ${base64.encode(`${process.env.IDCS_CLIENT_ID}:${process.env.IDCS_CLIENT_SECRET}`)}`
         },
     });
+    
+        console.log("hello");
 
     cached.token = data.access_token;
     cached.exp = now + data.expires_in;
