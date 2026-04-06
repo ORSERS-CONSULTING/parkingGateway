@@ -1,31 +1,16 @@
 require("dotenv").config();
 const { getSecret } = require("./vault");
 
-console.log(">>> env.js loaded");
-console.log("RAW ENV CHECK:", {
-  PORT: process.env.PORT,
-  LOCAL_IP: process.env.LOCAL_IP,
-  APEX_URL: process.env.APEX_URL,
-  HIK_HOST_OCID: process.env.HIK_HOST_OCID,
-  APPKEY_OCID: process.env.APPKEY_OCID,
-  APPSECRET_OCID: process.env.APPSECRET_OCID,
-  CLIENT_ID_OCID: process.env.CLIENT_ID_OCID,
-  CLIENT_SECRET_OCID: process.env.CLIENT_SECRET_OCID,
-  IDCS_TENANT_OCID: process.env.IDCS_TENANT_OCID,
-});
+
 
 const required = async (name, vaultOcidEnvVar) => {
-  console.log(`>>> required() called for ${name}`);
 
   if (process.env[name]) {
-    console.log(`>>> ${name} found directly in env`);
     return process.env[name];
   }
   // 2. Otherwise, try fetching from OCI Vault
   const secretOcid = process.env[vaultOcidEnvVar];
-  console.log(`>>> ${name} secret OCID =`, secretOcid);
   if (secretOcid) {
-    console.log(`>>> Fetching ${name} from Vault`);
     return await getSecret(secretOcid);
   }
 

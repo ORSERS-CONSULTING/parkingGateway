@@ -14,9 +14,6 @@ async function getIdcsToken() {
   if (cached.token && now < cached.exp - 30) return cached.token;
 
 
-  console.log("apex2", process.env.APEX_URL);
-  console.log("idcs", process.env.IDCS_TENANT, process.env.CLIENT_ID)
-
   const url = `https://${process.env.IDCS_TENANT}/oauth2/v1/token`;
   const body = new URLSearchParams({
     grant_type: 'client_credentials',
@@ -30,7 +27,6 @@ async function getIdcsToken() {
     },
   });
 
-  console.log("hello");
 
   cached.token = data.access_token;
   cached.exp = now + data.expires_in;
@@ -100,12 +96,8 @@ app.post('/subscribe', async (_req, res) => {
 app.post('/anpr-event', async (req, res) => {
   res.send('OK');
 
-  console.log('\n===== HIKVISION RAW EVENT =====');
-  console.log(JSON.stringify(req.body, null, 2));
-  console.log('===============================\n');
   const evs = req.body?.params?.events || [];
   if (!evs.length) return;
-  console.log(evs)
 
   const list = evs.map(ev => {
     const passageName = ev.srcName?.toUpperCase() || '';
@@ -130,8 +122,7 @@ app.post('/anpr-event', async (req, res) => {
 
   try {
     const token = await getIdcsToken();
-    console.log("token", token);
-    console.log("apex", process.env.APEX_URL);
+
     await axios.post(process.env.APEX_URL,
       { data: list },
       {
@@ -172,8 +163,6 @@ app.get('/run-sync', async (_req, res) => {
     if (!list.length) return res.send('No vehicle records received.');
 
     const token = await getIdcsToken();
-    console.log("token", token);
-    console.log("apex", process.env.APEX_URL);
     await axios.post(process.env.APEX_URL,
       {
         data: list.map(v => ({
