@@ -12,7 +12,7 @@ async function getIdcsToken() {
     if (cached.token && now < cached.exp - 30) return cached.token;
 
     
-        console.log("apex", process.env.APEX_URL);
+        console.log("apex2", process.env.APEX_URL);
 
     const url = `https://${process.env.IDCS_TENANT}/oauth2/v1/token`;
     const body = new URLSearchParams({
