@@ -114,6 +114,8 @@ app.post('/anpr-event', async (req, res) => {
 
   try {
     const token = await getIdcsToken();
+    console.log("token", token);
+    console.log("apex", process.env.APEX_URL);
     await axios.post(process.env.APEX_URL,
       { data: list },
       {
@@ -154,6 +156,8 @@ app.get('/run-sync', async (_req, res) => {
     if (!list.length) return res.send('No vehicle records received.');
 
     const token = await getIdcsToken();
+    console.log("token", token);
+    console.log("apex", process.env.APEX_URL);
     await axios.post(process.env.APEX_URL,
       {
         data: list.map(v => ({
