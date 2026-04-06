@@ -163,31 +163,37 @@ app.get('/run-sync', async (_req, res) => {
     if (!list.length) return res.send('No vehicle records received.');
 
     const token = await getIdcsToken();
-    if(v.parkingLotInfo.parkingLotIndexCode == 8){
+    if (v.parkingLotInfo.parkingLotIndexCode == 8) {
       v.parkingLotInfo.parkingLotIndexCode == 22;
     }
     await axios.post(process.env.APEX_URL,
       {
-        data: list.map(v => ({
-          guid: v.guid,
-          parking_lot_code: v.parkingLotInfo.parkingLotIndexCode,
-          parking_lot_name: v.parkingLotInfo.parkingLotName,
-          passageway_code: v.passagewayInfo.passagewayIndexCode,
-          passageway_name: v.passagewayInfo.passagewayName,
-          lane_code: v.laneInfo.laneIndexCode,
-          lane_name: v.laneInfo.laneName,
-          lane_direction: v.laneInfo.direction,
-          plate_number: v.carInfo.plateLicense,
-          car_type: v.carInfo.carType,
-          image_url: v.carInfo.ImageUrl,
-          country: v.carInfo.country ?? null,
-          plate_area_name: v.carInfo.plateAreaName ?? null,
-          plate_category: v.carInfo.plateCategory ?? null,
-          enter_time: v.carInfo.EnterTime,
-          exit_time: v.carInfo.ExitTime,
-          allow_type: v.allowType,
-          allow_result: v.allowResult
-        }))
+        data: list.map(v => {
+          if (v.parkingLotInfo.parkingLotIndexCode == 8) {
+            v.parkingLotInfo.parkingLotIndexCode = 22;
+          }
+
+          return {
+            guid: v.guid,
+            parking_lot_code: v.parkingLotInfo.parkingLotIndexCode,
+            parking_lot_name: v.parkingLotInfo.parkingLotName,
+            passageway_code: v.passagewayInfo.passagewayIndexCode,
+            passageway_name: v.passagewayInfo.passagewayName,
+            lane_code: v.laneInfo.laneIndexCode,
+            lane_name: v.laneInfo.laneName,
+            lane_direction: v.laneInfo.direction,
+            plate_number: v.carInfo.plateLicense,
+            car_type: v.carInfo.carType,
+            image_url: v.carInfo.ImageUrl,
+            country: v.carInfo.country ?? null,
+            plate_area_name: v.carInfo.plateAreaName ?? null,
+            plate_category: v.carInfo.plateCategory ?? null,
+            enter_time: v.carInfo.EnterTime,
+            exit_time: v.carInfo.ExitTime,
+            allow_type: v.allowType,
+            allow_result: v.allowResult
+          };
+        })
       },
       {
         headers: {
@@ -202,6 +208,7 @@ app.get('/run-sync', async (_req, res) => {
     res.status(500).send(e.response?.data || e.message);
   }
 });
+
 
 /* route for allowing to car to exits */
 
