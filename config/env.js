@@ -15,12 +15,17 @@ console.log("RAW ENV CHECK:", {
 });
 
 const required = async (name, vaultOcidEnvVar) => {
-  // 1. Try normal env var
-  if (process.env[name]) return process.env[name];
+  console.log(`>>> required() called for ${name}`);
 
+  if (process.env[name]) {
+    console.log(`>>> ${name} found directly in env`);
+    return process.env[name];
+  }
   // 2. Otherwise, try fetching from OCI Vault
   const secretOcid = process.env[vaultOcidEnvVar];
+  console.log(`>>> ${name} secret OCID =`, secretOcid);
   if (secretOcid) {
+    console.log(`>>> Fetching ${name} from Vault`);
     return await getSecret(secretOcid);
   }
 
