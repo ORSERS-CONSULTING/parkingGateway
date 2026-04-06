@@ -22,6 +22,10 @@ async function loadConfig() {
     HIK_HOST: await required("HIK_HOST", "HIK_HOST_OCID"),
     APPKEY: await required("APPKEY", "APPKEY_OCID"),
     APPSECRET: await required("APPSECRET", "APPSECRET_OCID"),
+    CLIENT_ID: await required("CLIENT_ID", "CLIENT_ID_OCID"),
+    CLIENT_SECRET: await required("CLIENT_SECRET", "CLIENT_SECRET_OCID"),
+    IDCS_TENANT: await required("IDCS_TENANT", "IDCS_TENANT_OCID"),
+
   };
 }
 

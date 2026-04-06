@@ -1,7 +1,4 @@
-require('dotenv/config');
-
 const loadConfig = require('./config/env');
-
 (async () => {
   const config = await loadConfig();
   process.env.PORT = config.PORT
@@ -10,6 +7,9 @@ const loadConfig = require('./config/env');
   process.env.APEX_URL = config.APEX_URL;
   process.env.APPKEY = config.APPKEY;
   process.env.APPSECRET = config.APPSECRET;
+  process.env.CLIENT_ID = config.CLIENT_ID;
+  process.env.CLIENT_SECRET = config.CLIENT_SECRET;
+  process.env.IDCS_TENANT = config.IDCS_TENANT;
 })();
 
 
@@ -18,6 +18,7 @@ const crypto = require('crypto');
 const axios = require('axios');
 const https = require('https');
 
+const { getIdcsToken } = require("./services/idcsServices");
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '2mb' }));      // parse HikCentral JSON
@@ -112,9 +113,16 @@ app.post('/anpr-event', async (req, res) => {
   });
 
   try {
+    const token = await getIdcsToken();
     await axios.post(process.env.APEX_URL,
       { data: list },
-      { headers: { 'Content-Type': 'application/json' } });
+      {
+        headers: {
+          'Content-Type': 'application/json',
+
+          Authorization: `Bearer ${token}`
+        }
+      });
     console.log(`✔ wrote ${list.length} rows to Oracle`);
   } catch (e) {
     console.error('APEX insert failed:', e.response?.data || e.message);
@@ -145,6 +153,7 @@ app.get('/run-sync', async (_req, res) => {
     const list = r.data?.data?.list || [];
     if (!list.length) return res.send('No vehicle records received.');
 
+    const token = await getIdcsToken();
     await axios.post(process.env.APEX_URL,
       {
         data: list.map(v => ({
@@ -159,7 +168,7 @@ app.get('/run-sync', async (_req, res) => {
           plate_number: v.carInfo.plateLicense,
           car_type: v.carInfo.carType,
           image_url: v.carInfo.ImageUrl,
-          country: v.carInfo.country ?? null, 
+          country: v.carInfo.country ?? null,
           plate_area_name: v.carInfo.plateAreaName ?? null,
           plate_category: v.carInfo.plateCategory ?? null,
           enter_time: v.carInfo.EnterTime,
@@ -168,7 +177,13 @@ app.get('/run-sync', async (_req, res) => {
           allow_result: v.allowResult
         }))
       },
-      { headers: { 'Content-Type': 'application/json' } });
+      {
+        headers: {
+          'Content-Type': 'application/json',
+
+          Authorization: `Bearer ${token}`
+        }
+      });
     res.send(`Forwarded ${list.length} records to APEX`);
   } catch (e) {
     console.error(e.response?.data || e.message);
