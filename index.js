@@ -102,10 +102,11 @@ app.post('/anpr-event', async (req, res) => {
   const list = evs.map(ev => {
     const passageName = ev.srcName?.toUpperCase() || '';
     const isExit = passageName.includes('EXIT');
+    const parkingLotCode = String(ev.srcIndex) === '8' ? 22 : ev.srcIndex;
 
     return {
       guid: ev.eventId,
-      parking_lot_code: ev.srcIndex,
+      parking_lot_code: parkingLotCode,
       parking_lot_name: ev.srcName,
       plate_number: ev.data?.plateNo ?? '',
       car_type: ev.data?.vehicleType ?? null,
@@ -123,30 +124,33 @@ app.post('/anpr-event', async (req, res) => {
   try {
     const token = await getIdcsToken();
 
-    await axios.post(process.env.APEX_URL,
+    await axios.post(
+      process.env.APEX_URL,
       { data: list },
       {
         headers: {
           'Content-Type': 'application/json',
-
           Authorization: `Bearer ${token}`
         }
-      });
+      }
+    );
+
     console.log(`✔ wrote ${list.length} rows to Oracle`);
   } catch (e) {
     console.error('APEX insert failed:', e.response?.data || e.message);
   }
 });
-
 /**********************************************************************
  * 3)  Your existing polling route – unchanged
  *********************************************************************/
 app.get('/run-sync', async (_req, res) => {
   const nowUtc = new Date();
-  const start = new Date(nowUtc); start.setUTCHours(0, 0, 0, 0);
+  const start = new Date(nowUtc);
+  start.setUTCHours(0, 0, 0, 0);
 
   const body = {
-    pageIndex: 1, pageSize: 10,
+    pageIndex: 1,
+    pageSize: 10,
     queryInfo: {
       parkingLotIndexCode: '1',
       beginTime: gstTimestamp(start),
@@ -155,60 +159,60 @@ app.get('/run-sync', async (_req, res) => {
   };
 
   const path = '/artemis/api/vehicle/v1/parkinglot/passageway/record';
+
   try {
-    const r = await axios.post(`https://${process.env.HIK_HOST}${path}`,
-      body, signPost(path, body));
+    const r = await axios.post(
+      `https://${process.env.HIK_HOST}${path}`,
+      body,
+      signPost(path, body)
+    );
 
     const list = r.data?.data?.list || [];
     if (!list.length) return res.send('No vehicle records received.');
 
     const token = await getIdcsToken();
-    if (v.parkingLotInfo.parkingLotIndexCode == 8) {
-      v.parkingLotInfo.parkingLotIndexCode == 22;
-    }
-    await axios.post(process.env.APEX_URL,
-      {
-        data: list.map(v => {
-          if (v.parkingLotInfo.parkingLotIndexCode == 8) {
-            v.parkingLotInfo.parkingLotIndexCode = 22;
-          }
 
-          return {
-            guid: v.guid,
-            parking_lot_code: v.parkingLotInfo.parkingLotIndexCode,
-            parking_lot_name: v.parkingLotInfo.parkingLotName,
-            passageway_code: v.passagewayInfo.passagewayIndexCode,
-            passageway_name: v.passagewayInfo.passagewayName,
-            lane_code: v.laneInfo.laneIndexCode,
-            lane_name: v.laneInfo.laneName,
-            lane_direction: v.laneInfo.direction,
-            plate_number: v.carInfo.plateLicense,
-            car_type: v.carInfo.carType,
-            image_url: v.carInfo.ImageUrl,
-            country: v.carInfo.country ?? null,
-            plate_area_name: v.carInfo.plateAreaName ?? null,
-            plate_category: v.carInfo.plateCategory ?? null,
-            enter_time: v.carInfo.EnterTime,
-            exit_time: v.carInfo.ExitTime,
-            allow_type: v.allowType,
-            allow_result: v.allowResult
-          };
-        })
+    await axios.post(
+      process.env.APEX_URL,
+      {
+        data: list.map(v => ({
+          guid: v.guid,
+          parking_lot_code:
+            String(v.parkingLotInfo?.parkingLotIndexCode) === '8'
+              ? 22
+              : v.parkingLotInfo?.parkingLotIndexCode,
+          parking_lot_name: v.parkingLotInfo?.parkingLotName,
+          passageway_code: v.passagewayInfo?.passagewayIndexCode,
+          passageway_name: v.passagewayInfo?.passagewayName,
+          lane_code: v.laneInfo?.laneIndexCode,
+          lane_name: v.laneInfo?.laneName,
+          lane_direction: v.laneInfo?.direction,
+          plate_number: v.carInfo?.plateLicense,
+          car_type: v.carInfo?.carType,
+          image_url: v.carInfo?.ImageUrl,
+          country: v.carInfo?.country ?? null,
+          plate_area_name: v.carInfo?.plateAreaName ?? null,
+          plate_category: v.carInfo?.plateCategory ?? null,
+          enter_time: v.carInfo?.EnterTime,
+          exit_time: v.carInfo?.ExitTime,
+          allow_type: v.allowType,
+          allow_result: v.allowResult
+        }))
       },
       {
         headers: {
           'Content-Type': 'application/json',
-
           Authorization: `Bearer ${token}`
         }
-      });
+      }
+    );
+
     res.send(`Forwarded ${list.length} records to APEX`);
   } catch (e) {
     console.error(e.response?.data || e.message);
     res.status(500).send(e.response?.data || e.message);
   }
 });
-
 
 /* route for allowing to car to exits */
 
