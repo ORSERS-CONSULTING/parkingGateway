@@ -15,7 +15,7 @@ async function getIdcsToken() {
 
 
   console.log("apex2", process.env.APEX_URL);
-  console.log("idcs", process.env.IDCS_TENANT, process.env.IDCS_CLIENT_ID)
+  console.log("idcs", process.env.IDCS_TENANT, process.env.CLIENT_ID)
 
   const url = `https://${process.env.IDCS_TENANT}/oauth2/v1/token`;
   const body = new URLSearchParams({
