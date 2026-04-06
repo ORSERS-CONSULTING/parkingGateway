@@ -1,6 +1,8 @@
 const loadConfig = require('./config/env');
 
 (async () => {
+    console.log(">>> bootstrap started");
+
     const config = await loadConfig();
 
     console.log("\n===== LOADED CONFIG =====");
