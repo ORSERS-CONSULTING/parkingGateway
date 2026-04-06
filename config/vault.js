@@ -12,7 +12,7 @@ async function getSecret(secretOcid) {
   const provider = await new InstancePrincipalsAuthenticationDetailsProviderBuilder().build();
 console.log(">>> provider built");
   const client = new SecretsClient({ authenticationDetailsProvider: provider });
-  client.regionId = process.env.OCI_REGION || "me-dubai-1";
+  client.regionId = "me-dubai-1";
   console.log(">>> client region:", client.regionId);
 
   const { secretBundle } = await client.getSecretBundle({
