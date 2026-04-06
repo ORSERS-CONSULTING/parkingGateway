@@ -163,6 +163,9 @@ app.get('/run-sync', async (_req, res) => {
     if (!list.length) return res.send('No vehicle records received.');
 
     const token = await getIdcsToken();
+    if(v.parkingLotInfo.parkingLotIndexCode == 8){
+      v.parkingLotInfo.parkingLotIndexCode == 22;
+    }
     await axios.post(process.env.APEX_URL,
       {
         data: list.map(v => ({
