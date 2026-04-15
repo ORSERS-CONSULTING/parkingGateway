@@ -94,33 +94,27 @@ app.post('/subscribe', async (_req, res) => {
  * 2)  HikCentral pushes every plate read here
  *********************************************************************/
 app.post('/anpr-event', async (req, res) => {
-  res.send('OK');
-
+  res.send('OK');                                 // ACK quickly
   const evs = req.body?.params?.events || [];
   if (!evs.length) return;
-
+  console.log(evs)
   const list = evs.map(ev => {
     const passageName = ev.srcName?.toUpperCase() || '';
     const isExit = passageName.includes('EXIT');
-    const parkingLotCode = String(ev.srcIndex) === '8' ? 22 : ev.srcIndex;
 
     return {
       guid: ev.eventId,
-      parking_lot_code: parkingLotCode,
+      parking_lot_code: ev.srcIndex,
       parking_lot_name: ev.srcName,
       plate_number: ev.data?.plateNo ?? '',
       car_type: ev.data?.vehicleType ?? null,
       image_url: ev.data?.vehiclePicUri ?? '',
-      country: ev.data?.country ?? null,
-      plate_area_name: ev.data?.plateAreaName ?? null,
-      plate_category: ev.data?.plateCategory ?? null,
       enter_time: isExit ? null : ev.happenTime,
       exit_time: isExit ? ev.happenTime : null,
       allow_type: null,
       allow_result: null,
     };
   });
-
   try {
     const token = await getIdcsToken();
 
@@ -177,24 +171,18 @@ app.get('/run-sync', async (_req, res) => {
       {
         data: list.map(v => ({
           guid: v.guid,
-          parking_lot_code:
-            String(v.parkingLotInfo?.parkingLotIndexCode) === '8'
-              ? 22
-              : v.parkingLotInfo?.parkingLotIndexCode,
-          parking_lot_name: v.parkingLotInfo?.parkingLotName,
-          passageway_code: v.passagewayInfo?.passagewayIndexCode,
-          passageway_name: v.passagewayInfo?.passagewayName,
-          lane_code: v.laneInfo?.laneIndexCode,
-          lane_name: v.laneInfo?.laneName,
-          lane_direction: v.laneInfo?.direction,
-          plate_number: v.carInfo?.plateLicense,
-          car_type: v.carInfo?.carType,
-          image_url: v.carInfo?.ImageUrl,
-          country: v.carInfo?.country ?? null,
-          plate_area_name: v.carInfo?.plateAreaName ?? null,
-          plate_category: v.carInfo?.plateCategory ?? null,
-          enter_time: v.carInfo?.EnterTime,
-          exit_time: v.carInfo?.ExitTime,
+          parking_lot_code: v.parkingLotInfo.parkingLotIndexCode,
+          parking_lot_name: v.parkingLotInfo.parkingLotName,
+          passageway_code: v.passagewayInfo.passagewayIndexCode,
+          passageway_name: v.passagewayInfo.passagewayName,
+          lane_code: v.laneInfo.laneIndexCode,
+          lane_name: v.laneInfo.laneName,
+          lane_direction: v.laneInfo.direction,
+          plate_number: v.carInfo.plateLicense,
+          car_type: v.carInfo.carType,
+          image_url: v.carInfo.ImageUrl,
+          enter_time: v.carInfo.EnterTime,
+          exit_time: v.carInfo.ExitTime,
           allow_type: v.allowType,
           allow_result: v.allowResult
         }))
@@ -217,7 +205,9 @@ app.get('/run-sync', async (_req, res) => {
 /* route for allowing to car to exits */
 
 app.post('/confirm-from-db', async (req, res) => {
-  const { plateLicense, immediatelyLeave, fee, country, plateCategory } = req.body;
+  const { plateLicense,
+    immediatelyLeave,
+    fee } = req.body;
 
   if (!plateLicense || immediatelyLeave === undefined || fee === undefined) {
     return res.status(400).send({ error: 'Missing plateLicense, immediatelyLeave, or fee' });
@@ -226,9 +216,7 @@ app.post('/confirm-from-db', async (req, res) => {
   const confirmBody = {
     plateLicense,
     immediatelyLeave,
-    fee,
-    ...(country != null ? { country } : {}),
-    ...(plateCategory != null ? { plateCategory } : {}),
+    fee
   };
 
   const path = '/artemis/api/vehicle/v1/parkingfee/confirm';
