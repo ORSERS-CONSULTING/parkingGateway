@@ -93,43 +93,33 @@ app.post('/subscribe', async (_req, res) => {
 /**********************************************************************
  * 2)  HikCentral pushes every plate read here
  *********************************************************************/
-app.post('/anpr-event', async (req, res) => {
+app.post('/anpr-event', async (req, res) => {                         // ACK quickly
+  const evs = req.body?.params?.events || [];
+  if (!evs.length) return;
+  console.log(evs)
+  const list = evs.map(ev => {
+    const passageName = ev.srcName?.toUpperCase() || '';
+    const isExit = passageName.includes('EXIT');
+
+    return {
+      guid: ev.eventId,
+      parking_lot_code: ev.srcIndex,
+      parking_lot_name: ev.srcName,
+      plate_number: ev.data?.plateNo ?? '',
+      car_type: ev.data?.vehicleType ?? null,
+      image_url: ev.data?.vehiclePicUri ?? '',
+      enter_time: isExit ? null : ev.happenTime,
+      exit_time: isExit ? ev.happenTime : null,
+      allow_type: null,
+      allow_result: null,
+    };
+  });
   try {
-    console.log('===== ANPR EVENT RECEIVED =====');
-    console.log('Headers:', req.headers);
-    console.log('Body:', JSON.stringify(req.body, null, 2));
-
-    const evs = req.body?.params?.events || [];
-    if (!evs.length) {
-      console.log('No events found in payload');
-      return res.status(400).send({ error: 'No events found in payload' });
-    }
-
-    const list = evs.map(ev => {
-      const passageName = ev.srcName?.toUpperCase() || '';
-      const isExit = passageName.includes('EXIT');
-
-      return {
-        guid: ev.eventId,
-        parking_lot_code: ev.srcIndex,
-        parking_lot_name: ev.srcName,
-        plate_number: ev.data?.plateNo ?? '',
-        car_type: ev.data?.vehicleType ?? null,
-        image_url: ev.data?.vehiclePicUri ?? '',
-        enter_time: isExit ? null : ev.happenTime,
-        exit_time: isExit ? ev.happenTime : null,
-        allow_type: null,
-        allow_result: null,
-      };
-    });
-
-    console.log('Mapped list:', JSON.stringify(list, null, 2));
-    console.log('APEX_URL:', process.env.APEX_URL);
-
     const token = await getIdcsToken();
-    console.log('Token fetched successfully');
 
-    const r = await axios.post(
+    console.log(token);
+
+    await axios.post(
       process.env.APEX_URL,
       { data: list },
       {
@@ -140,23 +130,11 @@ app.post('/anpr-event', async (req, res) => {
       }
     );
 
-    console.log('Oracle response:', JSON.stringify(r.data, null, 2));
     console.log(`✔ wrote ${list.length} rows to Oracle`);
-
-    return res.status(200).send({
-      message: 'Inserted successfully',
-      sent: list
-    });
+    
+  res.send('OK');        
   } catch (e) {
-    console.error('===== APEX INSERT FAILED =====');
-    console.error('Message:', e.message);
-    console.error('Response data:', e.response?.data);
-    console.error('Response status:', e.response?.status);
-    console.error('Stack:', e.stack);
-
-    return res.status(500).send({
-      error: e.response?.data || e.message
-    });
+    console.error('APEX insert failed:', e.response?.data || e.message);
   }
 });
 /**********************************************************************
