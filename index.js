@@ -117,8 +117,6 @@ app.post('/anpr-event', async (req, res) => {                         // ACK qui
   try {
     const token = await getIdcsToken();
 
-    console.log(token);
-
     await axios.post(
       process.env.APEX_URL,
       { data: list },
