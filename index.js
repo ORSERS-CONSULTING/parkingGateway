@@ -117,7 +117,9 @@ app.post('/anpr-event', async (req, res) => {                         // ACK qui
   try {
     const token = await getIdcsToken();
 
-    await axios.post(
+    console.log(token);
+
+    const r = await axios.post(
       process.env.APEX_URL,
       { data: list },
       {
@@ -128,9 +130,13 @@ app.post('/anpr-event', async (req, res) => {                         // ACK qui
       }
     );
 
+    console.log('Oracle response:', r.data);
     console.log(`✔ wrote ${list.length} rows to Oracle`);
-    
-  res.send('OK');        
+
+    return res.status(200).send({
+      message: 'Inserted successfully',
+      sent: list
+    });
   } catch (e) {
     console.error('APEX insert failed:', e.response?.data || e.message);
   }
