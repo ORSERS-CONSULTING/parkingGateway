@@ -93,8 +93,7 @@ app.post('/subscribe', async (_req, res) => {
 /**********************************************************************
  * 2)  HikCentral pushes every plate read here
  *********************************************************************/
-app.post('/anpr-event', async (req, res) => {
-  res.send('OK');                                 // ACK quickly
+app.post('/anpr-event', async (req, res) => {                         // ACK quickly
   const evs = req.body?.params?.events || [];
   if (!evs.length) return;
   console.log(evs)
@@ -130,6 +129,8 @@ app.post('/anpr-event', async (req, res) => {
     );
 
     console.log(`✔ wrote ${list.length} rows to Oracle`);
+    
+  res.send('OK');        
   } catch (e) {
     console.error('APEX insert failed:', e.response?.data || e.message);
   }
