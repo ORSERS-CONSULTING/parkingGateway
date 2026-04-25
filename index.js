@@ -212,37 +212,67 @@ app.get('/run-sync', async (_req, res) => {
 /* route for allowing to car to exits */
 
 app.post('/confirm-from-db', async (req, res) => {
+  console.log('🚀 /confirm-from-db HIT');
+  console.log('📥 Incoming body:', JSON.stringify(req.body, null, 2));
+
   const { plateLicense, immediatelyLeave, fee, country, plateCategory } = req.body;
 
+  // Validate required fields
   if (!plateLicense || immediatelyLeave === undefined || fee === undefined) {
+    console.error('❌ Missing required fields:', {
+      plateLicense,
+      immediatelyLeave,
+      fee
+    });
     return res.status(400).send({ error: 'Missing plateLicense, immediatelyLeave, or fee' });
   }
 
+  // Build request body (ONLY include optional fields if they exist)
   const confirmBody = {
     plateLicense,
     immediatelyLeave,
     fee,
-    ...(country != null ? { country } : {}),
-    ...(plateCategory != null ? { plateCategory } : {}),
+    ...(country !== undefined && country !== null ? { country } : {}),
+    ...(plateCategory !== undefined && plateCategory !== null ? { plateCategory } : {})
   };
+
+  console.log('📤 Final request body to Hikvision:', JSON.stringify(confirmBody, null, 2));
 
   const path = '/artemis/api/vehicle/v1/parkingfee/confirm';
 
   try {
+    console.log(`🌐 Sending request to: https://${process.env.HIK_HOST}${path}`);
+
     const response = await axios.post(
       `https://${process.env.HIK_HOST}${path}`,
       confirmBody,
       signPost(path, confirmBody)
     );
 
-    console.log('✅ Confirmation sent to Hikvision:', response.data);
-    res.status(200).send({ message: 'Confirmation sent', result: response.data });
+    console.log('✅ Hikvision response status:', response.status);
+    console.log('✅ Hikvision response data:', JSON.stringify(response.data, null, 2));
+
+    res.status(200).send({
+      message: 'Confirmation sent',
+      result: response.data
+    });
+
   } catch (e) {
-    console.error('❌ Confirm API failed:', e.response?.data || e.message);
-    res.status(500).send({ error: e.response?.data || e.message });
+    console.error('❌ Confirm API failed');
+
+    if (e.response) {
+      console.error('📛 Status:', e.response.status);
+      console.error('📛 Headers:', e.response.headers);
+      console.error('📛 Data:', JSON.stringify(e.response.data, null, 2));
+    } else {
+      console.error('📛 Error message:', e.message);
+    }
+
+    res.status(500).send({
+      error: e.response?.data || e.message
+    });
   }
 });
-
 
 (async () => {
   try {
