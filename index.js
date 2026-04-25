@@ -108,6 +108,9 @@ app.post('/anpr-event', async (req, res) => {                         // ACK qui
       plate_number: ev.data?.plateNo ?? '',
       car_type: ev.data?.vehicleType ?? null,
       image_url: ev.data?.vehiclePicUri ?? '',
+      country: ev.data?.country ?? null,
+      plate_area_name: ev.data?.plateAreaName ?? null,
+      plate_category: ev.data?.plateCategory ?? null,
       enter_time: isExit ? null : ev.happenTime,
       exit_time: isExit ? ev.happenTime : null,
       allow_type: null,
@@ -129,8 +132,8 @@ app.post('/anpr-event', async (req, res) => {                         // ACK qui
     );
 
     console.log(`✔ wrote ${list.length} rows to Oracle`);
-    
-  res.send('OK');        
+
+    res.send('OK');
   } catch (e) {
     console.error('APEX insert failed:', e.response?.data || e.message);
   }
@@ -182,6 +185,9 @@ app.get('/run-sync', async (_req, res) => {
           plate_number: v.carInfo.plateLicense,
           car_type: v.carInfo.carType,
           image_url: v.carInfo.ImageUrl,
+          country: v.carInfo?.country ?? null,
+          plate_area_name: v.carInfo?.plateAreaName ?? null,
+          plate_category: v.carInfo?.plateCategory ?? null,
           enter_time: v.carInfo.EnterTime,
           exit_time: v.carInfo.ExitTime,
           allow_type: v.allowType,
@@ -206,9 +212,7 @@ app.get('/run-sync', async (_req, res) => {
 /* route for allowing to car to exits */
 
 app.post('/confirm-from-db', async (req, res) => {
-  const { plateLicense,
-    immediatelyLeave,
-    fee } = req.body;
+  const { plateLicense, immediatelyLeave, fee, country, plateCategory } = req.body;
 
   if (!plateLicense || immediatelyLeave === undefined || fee === undefined) {
     return res.status(400).send({ error: 'Missing plateLicense, immediatelyLeave, or fee' });
@@ -217,7 +221,9 @@ app.post('/confirm-from-db', async (req, res) => {
   const confirmBody = {
     plateLicense,
     immediatelyLeave,
-    fee
+    fee,
+    ...(country != null ? { country } : {}),
+    ...(plateCategory != null ? { plateCategory } : {}),
   };
 
   const path = '/artemis/api/vehicle/v1/parkingfee/confirm';
